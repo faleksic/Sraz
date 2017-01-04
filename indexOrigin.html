@@ -1,0 +1,23 @@
+Hello
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script>
+    console.log('yoyoyo');
+	var socket = io();
+	
+	socket.on('serverMsg', function(data){
+		console.log(data.msg);
+	});
+	
+	socket.on('newGame',function(){
+		console.log('igra je pocela!');
+		
+	});
+	
+	socket.on('posta',function(data){
+	console.log('dobio sam postu...');
+		for (var i = 0; i < data.length; i++){
+			console.log(data[i].name);
+		}
+	});
+	
+</script>
