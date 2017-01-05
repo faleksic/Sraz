@@ -166,6 +166,7 @@ function create() {
 	game.input.onDown.add(nesto, this);
 	
 	text = game.add.text(180,250, 'Cekam protivnika...', { fill: '#fff' });
+	probni = game.add.text(180,250, '', { fill: '#fff' });
 	//stvori timer
 	timer = game.time.create(false);
 	timer.loop(Phaser.Timer.SECOND, pokreniTimer, this);
@@ -177,6 +178,10 @@ function create() {
 	btnOdgovor3 = game.add.button(120,433,'botun', klikNaPitanje, this, 2,2, 1);
 	btnOdgovor4 = game.add.button(120,502,'botun', klikNaPitanje, this, 2,2, 1);
 
+	btnOdgovor1.id = 1;
+	btnOdgovor2.id = 2;
+	btnOdgovor3.id = 3;
+	btnOdgovor4.id = 4;
 	
 	tekstPitanja1 = game.add.text(120, 295, "Some texttext texttext", style);
 	tekstPitanja2 = game.add.text(120, 364, "Some text", style);
@@ -194,12 +199,12 @@ function create() {
 	}
 }
 	
-vrijeme = 5;
+vrijeme = 10;
 function pokreniTimer() {
 	timerText.text = 'Preostalo vrijeme: ' + --vrijeme;
 	if (vrijeme == 0){
 		timer.stop(false);
-		vrijeme = 5;
+		vrijeme = 10;
 		zatvoriPitanje();
 	}
 }
@@ -220,14 +225,24 @@ function visibleButtons(bool){
 	btnOdgovor1.visible = bool;
 	btnOdgovor2.visible = bool;
 	btnOdgovor3.visible = bool;
-	btnOdgovor4.visible = bool;
-
-	
-	
+	btnOdgovor4.visible = bool;	
 }
 
+socket.on('vratiPitanje',function(pitanje){
+
+    tekstPitanja = game.add.text(100, 110, "Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje", { font: "24px Arial", fill: "#ffffff", wordWrap: true, wordWrapWidth: 350, align: "left", backgroundColor: "#000000" });
+
+	tekstPitanja.text = pitanje.pitanje;
+	tekstPitanja1.text = pitanje.odgovor1;
+	tekstPitanja2.text = pitanje.odgovor2;
+	tekstPitanja3.text = pitanje.odgovor3;
+	tekstPitanja4.text = pitanje.odgovor4;
+});
+
 function otvoriPitanje(kategorijaPitanja){
-	vrijeme = 5;
+	socket.emit('dohvatiPitanje',kategorijaPitanja);
+
+	vrijeme = 10;
 	pitanje = game.add.sprite(0, 0, kategorijaPitanja);
 	game.world.bringToTop(btnOdgovor1);
 	game.world.bringToTop(btnOdgovor2);
@@ -241,39 +256,55 @@ function otvoriPitanje(kategorijaPitanja){
 	
 	
 
-	tekstPitanja = game.add.text(100, 110, "Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje", { font: "24px Arial", fill: "#ffffff", wordWrap: true, wordWrapWidth: 350, align: "left", backgroundColor: "#000000" });
 
 
-	//tekstPitanja.text = ;
-	//tekstPitanja1.text = ;
-	//tekstPitanja1.text = ;
-	//tekstPitanja1.text = ;
-	//tekstPitanja1.text = ;
 	visibleButtons(true);
 	timerText = game.add.text (20,20,'Preostalo vrijeme: ',{ font: "15px Arial",fill: '#000000' });
 	timer.start();		
 }
-function klikNaPitanje () {
+function klikNaPitanje (odgovor) {
 	
-	//ako je tocno...
-	var podaci = [];
-	podaci.push({
-		trenutni : trenutni.id,
-		xNaKojiJeSkocio : xNaKojiJeSkocio,
-		yNaKojiJeSkocio : yNaKojiJeSkocio,
-		x : x,
-		y : y,
-		trenutniX : trenutniX,
-		trenutniY : trenutniY,
-		myID : myID,
-	});
-	zatvoriPitanje();
-	socket.emit('correctAnswer',podaci);
+	//ako si kiliknuo na btn1 vrati tekst sa btn1
+	var odgovorTekst = "";
+	switch(odgovor.id)
+	{
+		case 1: odgovorTekst = tekstPitanja1.text; break;
+		case 2: odgovorTekst = tekstPitanja2.text; break;
+		case 3: odgovorTekst = tekstPitanja3.text; break;
+		case 4: odgovorTekst = tekstPitanja4.text; break;
+	}
 	
-
-	//ako nije tocno	
+	socket.emit('provjeriOdgovor',odgovorTekst);	
 
 }
+
+socket.on('provjerenOdgovor',function(odgovorTocan){
+	if (odgovorTocan == true)
+	{
+		var podaci = [];
+		podaci.push({
+			trenutni : trenutni.id,
+			xNaKojiJeSkocio : xNaKojiJeSkocio,
+			yNaKojiJeSkocio : yNaKojiJeSkocio,
+			x : x,
+			y : y,
+			trenutniX : trenutniX,
+			trenutniY : trenutniY,
+			myID : myID,
+		});
+		zatvoriPitanje();
+		socket.emit('correctAnswer',podaci);
+	}
+	else{
+			zatvoriPitanje();
+			obrubLik.visible = false;
+			odabran = false;
+			makniObrube();
+			socket.emit('wrongAnswer',myID);
+		}
+
+});
+
 socket.on('disbleAllFigures',function(){
 
 	enableAll(false);
