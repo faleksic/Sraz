@@ -55,12 +55,6 @@ function drugoUpisivanjeUPolje(rows, i)
 }
 glavniSelect(upisivanjeUPolje);
 
-//console.log(pitanje[0]);
-//connection.end();
-/*
-				console.log(r);
-			});*/
-
 app.get('/',function(req,res){
 	res.sendFile(__dirname + '/Client/index.html');
 });
@@ -150,7 +144,7 @@ io.sockets.on('connection',function(socket){
 		else{
 			socket.emit('provjerenOdgovor',false);
 		}
-	})
+	});
 
 	socket.on('correctAnswer',function(data){
 
@@ -176,7 +170,7 @@ io.sockets.on('connection',function(socket){
 			
 	});
 	//trebalo bi napraviti sa SOCKED.ID
-		socket.on('wrongAnswer',function(id){
+	socket.on('wrongAnswer',function(id){
 			
 			if (id == 1)
 			{
@@ -189,27 +183,16 @@ io.sockets.on('connection',function(socket){
 				socket.emit('enableMyFigures', 1);
 			}
 			var socket = SOCKET_LIST[id]; //posalji onom koji je poslao da mu blokiras figuice
-			socket.emit('disbleAllFigures');
+			socket.emit('disbleAllFigures');			
+	});
+	socket.on('pobjeda',function(bojaIgraca){
 			
+		for (var i in SOCKET_LIST){
+			var socket = SOCKET_LIST[i];
+			socket.emit('pobjedioJeIgrac',bojaIgraca);
 			
+		}			
 	});
 	
 	
 });
-
-
-
-/* setInterval(function(){
-	var pack = [];
-	for (var i in SOCKET_LIST){
-		var socket = SOCKET_LIST[i];
-		pack.push({
-			id : socket.id,
-			name : socket.name
-		});
-	}
-	for (var i in SOCKET_LIST){
-		var socket = SOCKET_LIST[i];
-		socket.emit('posta',pack);
-	}
-},5000); */

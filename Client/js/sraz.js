@@ -165,8 +165,26 @@ function create() {
 	
 	game.input.onDown.add(nesto, this);
 	
-	text = game.add.text(180,250, 'Cekam protivnika...', { fill: '#fff' });
-	probni = game.add.text(180,250, '', { fill: '#fff' });
+	text = game.add.text(180,260, 'Čekam protivnika...', { fill: '#fff' });
+	
+	/////////////////////////////////
+	ispisPobjedeTxt = game.add.text(0,0, '', { fill: '#fff' });
+
+	
+	
+	
+	var bar = game.add.graphics();
+    bar.beginFill(0x000000, 0.2);
+    bar.drawRect(0, 225, 800, 100);
+	bar.visible = false;
+	
+	
+	
+	
+	
+	
+	
+	/////////////
 	//stvori timer
 	timer = game.time.create(false);
 	timer.loop(Phaser.Timer.SECOND, pokreniTimer, this);
@@ -183,7 +201,7 @@ function create() {
 	btnOdgovor3.id = 3;
 	btnOdgovor4.id = 4;
 	
-	tekstPitanja1 = game.add.text(120, 295, "Some texttext texttext", style);
+	tekstPitanja1 = game.add.text(120, 295, "Some text", style);
 	tekstPitanja2 = game.add.text(120, 364, "Some text", style);
 	tekstPitanja3 = game.add.text(120, 433, "Some text", style);
 	tekstPitanja4 = game.add.text(120, 502, "Some text", style);	
@@ -232,14 +250,28 @@ function visibleButtons(bool){
 
 socket.on('vratiPitanje',function(pitanje){
 
-    tekstPitanja = game.add.text(100, 110, "Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje Ovo je neko pitanje", { font: "24px Arial", fill: "#ffffff", wordWrap: true, wordWrapWidth: 350, align: "left", backgroundColor: "#000000" });
-
+    tekstPitanja = game.add.text(100, 110, "Ovo je pitanje", { font: "24px Arial", fill: "#ffffff", wordWrap: true, wordWrapWidth: 350, align: "left", backgroundColor: "#000000" });
 	tekstPitanja.text = pitanje.pitanje;
-	tekstPitanja1.text = pitanje.odgovor1;
-	tekstPitanja2.text = pitanje.odgovor2;
-	tekstPitanja3.text = pitanje.odgovor3;
-	tekstPitanja4.text = pitanje.odgovor4;
+	
+	var randomPolje = stvoriRandomUniquePolje();
+	
+	tekstPitanja1.text = vratiPitanjePoIndexu(randomPolje[0],pitanje);
+	tekstPitanja2.text = vratiPitanjePoIndexu(randomPolje[1],pitanje);
+	tekstPitanja3.text = vratiPitanjePoIndexu(randomPolje[2],pitanje);
+	tekstPitanja4.text = vratiPitanjePoIndexu(randomPolje[3],pitanje);
+	
+	
 });
+function vratiPitanjePoIndexu(indeks,pitanje)
+{
+	switch(indeks)
+	{
+		case 0: return pitanje.odgovor1;
+		case 1: return pitanje.odgovor2;
+		case 2: return pitanje.odgovor3;
+		case 3: return pitanje.odgovor4;
+	}
+}
 
 function otvoriPitanje(kategorijaPitanja){
 	socket.emit('dohvatiPitanje',kategorijaPitanja);
@@ -256,7 +288,7 @@ function otvoriPitanje(kategorijaPitanja){
 	game.world.bringToTop(tekstPitanja4);
 
 	visibleButtons(true);
-	timerText = game.add.text (20,20,'Preostalo vrijeme: ',{ font: "15px Arial",fill: '#000000' });
+	timerText = game.add.text (20,20,'Preostalo vrijeme: ',{ font: "14px Arial", fill: '#fff' });
 	timer.start();	
 
 	//zabrani klikanje na plocice ili lika
@@ -351,7 +383,6 @@ function nesto(){
 	makniPojedi();
 	x = Math.floor(game.input.mousePointer.x/80)*80;
 	y = Math.floor(game.input.mousePointer.y/80)*80;
-	probni.text = mapa[pronadiPlocicu(x,y)].plavi + "-" + mapa[pronadiPlocicu(x,y)].crveni + "-" + mapa[pronadiPlocicu(x,y)].idFigurice + "-" + mapa[pronadiPlocicu(x,y)].zauzeto;
 	if (odabran == true && trenutni.key == "pjesak1" && mapa[pronadiPlocicu(x,y)].plavi == true){
 		return;
 	}
@@ -422,6 +453,18 @@ function skociNaPolje(data){
 	mapa[pronadiPlocicu(data[0].xNaKojiJeSkocio,data[0].yNaKojiJeSkocio)].idFigurice = trenutni.id;
 	
 	makniObrube();
+	
+	//provjera pobjede
+	if (plavi1.visible == false && plavi2.visible == false && plavi3.visible == false)
+	{
+		var boja = 'plavi';
+		socket.emit('pobjeda', boja);
+	}
+	if (crveni1.visible == false && crveni2.visible == false && crveni3.visible == false)
+	{
+		var boja = 'crveni';
+		socket.emit('pobjeda', boja);
+	}
 }
 
 function update() {
@@ -530,6 +573,18 @@ socket.on('gameCanStart',function(){
 	    text.visible = false;
 	}
 });
+//ovo je kraj igre
+socket.on('pobjedioJeIgrac',function(bojaIgraca){
+	if (bojaIgraca == 'plavi'){
+		ispisPobjedeTxt.text = "Pobjeda za crvenog igraca!";
+	}
+	if (bojaIgraca == 'crveni'){
+		ispisPobjedeTxt.text = "Pobjeda za plavog igraca!";
+	}
+	ispisPobjedeTxt.x = game.width/2-ispisPobjedeTxt.width/2;
+	ispisPobjedeTxt.y = game.height/2-10;
+	enableAll(false);
+});
 function enabledPlavi(enabled){
     
 	plavi1.inputEnabled = enabled;
@@ -552,4 +607,20 @@ function enableAll(enabled){
     
 	enabledPlavi(enabled);
 	enabledCrveni(enabled);
+}
+
+function stvoriRandomUniquePolje()
+{
+	var polje = [];
+
+	for (var i = 0; i < 4; )
+	{
+		var randomBroj = Math.floor(4 * Math.random());	
+		if (polje.indexOf(randomBroj) == -1)
+		{
+			polje.push(randomBroj); 
+			i++;
+		}
+	}
+	return polje;
 }
