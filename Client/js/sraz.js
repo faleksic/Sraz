@@ -339,7 +339,9 @@ socket.on('provjerenOdgovor',function(odgovorTocan){
 		}
 
 });
-
+socket.on('connectedToRoom', function(data){
+	console.log(data);
+});
 socket.on('disbleAllFigures',function(){
 
 	enableAll(false);

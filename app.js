@@ -70,28 +70,32 @@ for (var i = 0; i < 49; i++){
 
 
 var SOCKET_LIST = {};
-var brojIgraca = 0;
 var igracNaRedu = 1; //svaki parni igra 1, a svaki neparni 2 (ili suprotno)
-
+var roomNum = 1;
 var io = require('socket.io')(serv,{});
 
 io.sockets.on('connection',function(socket){
 	//connection.end();
 	
 	console.log('socket connection');
-	brojIgraca++;
-	socket.id = brojIgraca;
+	//socket.id = brojIgraca;
 	
-
-	socket.emit('newGame',svaPolja,socket.id);
 	
 	SOCKET_LIST[socket.id] = socket;
 	
+    if (io.nsps['/'].adapter.rooms["room-" + roomNum] && io.nsps['/'].adapter.rooms["room-" + roomNum].length > 1)
+        roomNum++;
+    socket.join("room-" + roomNum);
+	socket.room = "room-" + roomNum;
+    io.sockets.in("room-" + roomNum).emit('connectedToRoom', "room-" + roomNum);
+	//Object.keys(io.nsps['/'].adapter.rooms["room-" + roomNum]['sockets'])[0]]
+	
+	var brojIgraca = io.nsps['/'].adapter.rooms["room-" + roomNum].length;
+	
+	socket.emit('newGame',svaPolja,brojIgraca);
+	
 	if (brojIgraca == 2){
-		for (var i in SOCKET_LIST){
-			var socket = SOCKET_LIST[i];
-			socket.emit('gameCanStart');
-		}
+		io.sockets.in(socket.room).emit('gameCanStart');
 	}
 	
 	socket.on('dohvatiPitanje',function(kategorija){
