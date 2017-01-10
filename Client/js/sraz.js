@@ -587,6 +587,14 @@ socket.on('pobjedioJeIgrac',function(bojaIgraca){
 	ispisPobjedeTxt.y = game.height/2-10;
 	enableAll(false);
 });
+
+socket.on('otiso', function(data){
+	ispisPobjedeTxt.text = data;
+	ispisPobjedeTxt.x = game.width/2-ispisPobjedeTxt.width/2;
+	ispisPobjedeTxt.y = game.height/2-10;
+	enableAll(false);
+});
+
 function enabledPlavi(enabled){
     
 	plavi1.inputEnabled = enabled;

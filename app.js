@@ -64,31 +64,27 @@ serv.listen(2000);
 console.log("Server started");
 
 var svaPolja = [];
-for (var i = 0; i < 49; i++){
-	svaPolja.push(Math.round(Math.random() * 4));
+function generirajPlocu(){
+	svaPolja = [];
+	for (var i = 0; i < 49; i++){
+		svaPolja.push(Math.round(Math.random() * 4));
+	}
 }
-
-
-var SOCKET_LIST = {};
-var igracNaRedu = 1; //svaki parni igra 1, a svaki neparni 2 (ili suprotno)
+generirajPlocu();
 var roomNum = 1;
 var io = require('socket.io')(serv,{});
 
 io.sockets.on('connection',function(socket){
-	//connection.end();
 	
-	console.log('socket connection');
-	//socket.id = brojIgraca;
-	
-	
-	SOCKET_LIST[socket.id] = socket;
-	
-    if (io.nsps['/'].adapter.rooms["room-" + roomNum] && io.nsps['/'].adapter.rooms["room-" + roomNum].length > 1)
+	//broji da li je u sobi 2 igrača
+    if (io.nsps['/'].adapter.rooms["room-" + roomNum] && io.nsps['/'].adapter.rooms["room-" + roomNum].length > 1){
         roomNum++;
+		generirajPlocu();
+	}
     socket.join("room-" + roomNum);
 	socket.room = "room-" + roomNum;
     io.sockets.in("room-" + roomNum).emit('connectedToRoom', "room-" + roomNum);
-	//Object.keys(io.nsps['/'].adapter.rooms["room-" + roomNum]['sockets'])[0]]
+	//Object.keys(io.nsps['/'].adapter.rooms["room-" + roomNum]['sockets'])[0]
 	
 	var brojIgraca = io.nsps['/'].adapter.rooms["room-" + roomNum].length;
 	
@@ -136,8 +132,9 @@ io.sockets.on('connection',function(socket){
 	}
 	
 	socket.on('disconnect',function(){
-		delete SOCKET_LIST[socket.id]
-		brojIgraca--;
+		io.sockets.in(socket.room).emit('otiso', 'Suigrač je napustio igru :(');
+		roomNum++;
+		generirajPlocu();
 	});
 	
 	socket.on('provjeriOdgovor',function(odgovor){
@@ -151,51 +148,33 @@ io.sockets.on('connection',function(socket){
 	});
 
 	socket.on('correctAnswer',function(data){
-
-		for (var i in SOCKET_LIST){
-			var socket = SOCKET_LIST[i];
-			socket.emit('skoci',data);
-			
-		}
+		io.sockets.in(socket.room).emit('skoci',data);
 		if (data[0].myID == 1)
 		{
-			var socket = SOCKET_LIST[2];
-			socket.emit('enableMyFigures', 2);
+			var sock = io.sockets.connected[Object.keys(io.nsps['/'].adapter.rooms[socket.room]['sockets'])[1]];
+			sock.emit('enableMyFigures', 2);
 		}
 		if (data[0].myID == 2)
 		{
-			var socket = SOCKET_LIST[1];
-			socket.emit('enableMyFigures', 1);
-		}
-		var socket = SOCKET_LIST[data[0].myID]; //posalji onom koji je poslao da mu blokiras figuice
-		socket.emit('disbleAllFigures');
-	
-			
-			
+			var sock = io.sockets.connected[Object.keys(io.nsps['/'].adapter.rooms[socket.room]['sockets'])[0]];
+			sock.emit('enableMyFigures', 1);
+		}		
 	});
 	//trebalo bi napraviti sa SOCKED.ID
 	socket.on('wrongAnswer',function(id){
-			
-			if (id == 1)
-			{
-				var socket = SOCKET_LIST[2];
-				socket.emit('enableMyFigures', 2);
-			}
-			if (id == 2)
-			{
-				var socket = SOCKET_LIST[1];
-				socket.emit('enableMyFigures', 1);
-			}
-			var socket = SOCKET_LIST[id]; //posalji onom koji je poslao da mu blokiras figuice
-			socket.emit('disbleAllFigures');			
+		if (id == 1)
+		{
+			var sock = io.sockets.connected[Object.keys(io.nsps['/'].adapter.rooms[socket.room]['sockets'])[1]];
+			sock.emit('enableMyFigures', 2);
+		}
+		if (id == 2)
+		{
+			var sock = io.sockets.connected[Object.keys(io.nsps['/'].adapter.rooms[socket.room]['sockets'])[0]];
+			sock.emit('enableMyFigures', 1);
+		}			
 	});
 	socket.on('pobjeda',function(bojaIgraca){
-			
-		for (var i in SOCKET_LIST){
-			var socket = SOCKET_LIST[i];
-			socket.emit('pobjedioJeIgrac',bojaIgraca);
-			
-		}			
+		io.sockets.in(socket.room).emit('pobjedioJeIgrac',bojaIgraca);
 	});
 	
 	
